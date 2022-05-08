@@ -1,6 +1,8 @@
 package com.example.secure.feemanagmentsystem.network
 
 import com.example.secure.feemanagmentsystem.DrawReciept.StudentFeeModel
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.http.*
 
@@ -17,14 +19,10 @@ interface StudentApiInterface {
     fun getStudentFeeStatus(@Path("student_id") student_id: Int): Call<String>
 
 
-    @FormUrlEncoded
+    @Multipart
     @POST("fees")
     fun saveStudentFeeData(
-        @Field("program_id") program_id: Int,
-        @Field("student_id") student_id: Int,
-        @Field("transaction_state") transaction_state: String,
-        @Field("amount") amount: Int,
-        @Field("semester") semester: String,
-        @Field("receipt_image") receipt_image: String,
+        @Part("image") image: MultipartBody.Part,
+        @Part("fees_data") feeData: RequestBody
     ) : Call<StudentFeeModel>
 }

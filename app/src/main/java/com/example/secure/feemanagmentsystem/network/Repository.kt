@@ -1,6 +1,8 @@
 package com.example.secure.feemanagmentsystem.network
 
 import com.example.secure.feemanagmentsystem.DrawReciept.StudentFeeModel
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Call
 
 class Repository {
@@ -12,7 +14,9 @@ class Repository {
         return   RetrofitInstance.apiString.getStudentFeeStatus(student_id)
     }
 
-    fun saveStudentFeeForm(program_id:Int,student_id:Int,transaction_state:String="paid",amount:Int,semester:String,receipt_image:String):Call<StudentFeeModel>{
-        return   RetrofitInstance.api.saveStudentFeeData(program_id,student_id,transaction_state,amount,semester,receipt_image)
+
+    fun saveStudentFeeFormData(body: MultipartBody.Part, requestJsonFile: RequestBody): Call<StudentFeeModel> {
+        return   RetrofitInstance.api.saveStudentFeeData(body,requestJsonFile)
+
     }
 }

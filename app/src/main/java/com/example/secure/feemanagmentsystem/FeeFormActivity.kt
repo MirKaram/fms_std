@@ -1,5 +1,6 @@
 package com.example.secure.feemanagmentsystem
 
+import UtilsFile
 import android.R.attr
 import android.content.ContentValues
 import android.content.Intent
@@ -21,11 +22,16 @@ import com.example.secure.feemanagmentsystem.network.Constants
 import com.example.secure.feemanagmentsystem.network.Constants.pickImage
 import com.example.secure.feemanagmentsystem.network.Repository
 import com.example.secure.feemanagmentsystem.network.StudentData
+import com.example.secure.feemanagmentsystem.network.UploadFeeData
+import com.google.gson.Gson
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import okhttp3.MediaType
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -105,26 +111,40 @@ class FeeFormActivity : AppCompatActivity() {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK && requestCode == pickImage) {
-            val bitmap = MediaStore.Images.Media.getBitmap(this.getContentResolver(), data?.data)
-            if (bitmap!=null)
-               saveFeeFormData(bitmap)
+            val uri = data?.data
+            if (uri != null)
+                saveFeeFormData(uri)
             else
                 Toast.makeText(this, "Someting went wrong", Toast.LENGTH_SHORT).show()
         }
     }
 
-    private fun saveFeeFormData(bitmap: Bitmap) {
-
+    private fun saveFeeFormData(uri: Uri) {
         val repository = Repository()
-        val img=imageToString(bitmap)
-        val retrofit = repository.saveStudentFeeForm(
-            studentInfo.id,
+
+        val utilsFile = UtilsFile()
+        val imagepath = utilsFile.getFullPathFromContentUri(this, uri)
+        val imagefile = File(imagepath)
+
+        val requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), imagefile)
+        val body = MultipartBody.Part.createFormData("image", imagefile.name, requestFile)
+
+
+        val uploadFeeData = UploadFeeData(
             studentInfo.program.id,
-            "Paid",
-            studentInfo.program.semester_fee+studentInfo.program.admission_fee+studentInfo.program.Lab_fee,
-            studentInfo.current_semester,
-            img
+            studentInfo.id,
+            studentInfo.program.semester_fee + studentInfo.program.admission_fee + studentInfo.program.Lab_fee,
+            studentInfo.current_semester
         )
+
+        val gson = Gson()
+        val jsonStr = gson.toJson(uploadFeeData)
+
+        val requestJsonFile = RequestBody.create(MediaType.parse("multipart/form-data"), jsonStr)
+
+
+        val retrofit = repository.saveStudentFeeFormData(body,requestJsonFile)
+
 
         retrofit.enqueue(object : Callback<StudentFeeModel?> {
             override fun onResponse(
@@ -133,7 +153,7 @@ class FeeFormActivity : AppCompatActivity() {
             ) {
                 if(response.isSuccessful){
                     if (response.body()?.success == true)
-                       Toast.makeText(this@FeeFormActivity, "Fee Form submit Successfully.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@FeeFormActivity, "Fee Form submit Successfully.", Toast.LENGTH_SHORT).show()
                     else
                         Toast.makeText(this@FeeFormActivity, "Something went wrong.", Toast.LENGTH_SHORT).show()
 
@@ -146,13 +166,6 @@ class FeeFormActivity : AppCompatActivity() {
         })
     }
 
-
-    private fun imageToString(bitmap: Bitmap): String {
-        val stream = ByteArrayOutputStream()
-        bitmap.compress(CompressFormat.JPEG, 20, stream)
-        val byteFormat = stream.toByteArray()
-        return Base64.encodeToString(byteFormat, Base64.NO_WRAP)
-    }
 
 
    private fun saveFeeFormToGalley() {
