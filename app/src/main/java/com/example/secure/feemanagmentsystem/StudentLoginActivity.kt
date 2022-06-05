@@ -41,7 +41,7 @@ class StudentLoginActivity : AppCompatActivity() {
                         val repository = Repository()
                         val retrofit =
                             repository.getStudentLoginStatus(userRollno.text.toString(), password.text.toString())
-                        Log.e("req","   req----${retrofit.request().url().toString()}")
+                        Log.e("req","   req----${retrofit.request().url()}")
                         retrofit.enqueue(object : Callback<StudentLoginModel?> {
                             override fun onResponse(
                                 call: Call<StudentLoginModel?>,
@@ -49,7 +49,6 @@ class StudentLoginActivity : AppCompatActivity() {
                             ) {
                                 Log.e("res","   ress---- ${response.message()}")
                                 if (response.isSuccessful) {
-
                                     if (response.body()?.success == true){
                                         val studenData:StudentData= response.body()?.data!!
                                         Toast.makeText(this@StudentLoginActivity, "Login Successfully.", Toast.LENGTH_SHORT).show()

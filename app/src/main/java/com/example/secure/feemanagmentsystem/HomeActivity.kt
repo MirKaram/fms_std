@@ -37,7 +37,6 @@ class HomeActivity : AppCompatActivity() {
          tvStudentCurrentSemester.text=studentInfo.current_semester
         }
 
-
         viewBinding.btnPayFee.setOnClickListener {
             val intent= Intent(this,FeeFormActivity::class.java)
             intent.putExtra(ARG_POJO,studentInfo)

@@ -22,7 +22,7 @@ interface StudentApiInterface {
     @Multipart
     @POST("fees")
     fun saveStudentFeeData(
-        @Part("image") image: MultipartBody.Part,
+        @Part image: MultipartBody.Part,
         @Part("fees_data") feeData: RequestBody
     ) : Call<StudentFeeModel>
 }

@@ -62,7 +62,7 @@ class UtilsFile {
     }
 
     fun getFullPathFromContentUri(context: Context, uri: Uri): String? {
-        val isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
+        val isKitKat = true
         var filePath = ""
         // DocumentProvider
         if (isKitKat && DocumentsContract.isDocumentUri(context, uri)) {
@@ -75,18 +75,14 @@ class UtilsFile {
                     Environment.getExternalStorageDirectory().toString() + "/" + split[1]
                 } //non-primary e.g sd card
                 else {
-                    if (Build.VERSION.SDK_INT > 20) {
-                        //getExternalMediaDirs() added in API 21
-                        val extenal: Array<File> = context.getExternalMediaDirs()
-                        for (f in extenal) {
-                            filePath = f.getAbsolutePath()
-                            if (filePath.contains(type)) {
-                                val endIndex = filePath.indexOf("Android")
-                                filePath = filePath.substring(0, endIndex) + split[1]
-                            }
+                    //getExternalMediaDirs() added in API 21
+                    val extenal: Array<File> = context.getExternalMediaDirs()
+                    for (f in extenal) {
+                        filePath = f.getAbsolutePath()
+                        if (filePath.contains(type)) {
+                            val endIndex = filePath.indexOf("Android")
+                            filePath = filePath.substring(0, endIndex) + split[1]
                         }
-                    } else {
-                        filePath = "/storage/" + type + "/" + split[1]
                     }
                     filePath
                 }

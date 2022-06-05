@@ -1,9 +1,9 @@
 package com.example.secure.feemanagmentsystem
 
 import UtilsFile
-import android.R.attr
 import android.content.ContentValues
 import android.content.Intent
+import android.database.Cursor
 import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.Color
@@ -11,7 +11,7 @@ import android.graphics.Paint
 import android.net.Uri
 import android.os.*
 import android.provider.MediaStore
-import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -35,7 +35,6 @@ import okhttp3.RequestBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
-import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.File.separator
 import java.io.FileOutputStream
@@ -80,7 +79,7 @@ class FeeFormActivity : AppCompatActivity() {
 
     fun runtimeTimePermission() {
         Dexter.withContext(this)
-            .withPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            .withPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE,android.Manifest.permission.READ_EXTERNAL_STORAGE)
             .withListener(object : MultiplePermissionsListener {
                 override fun onPermissionsChecked(p0: MultiplePermissionsReport?) {
                     viewBinding.pb.visibility=View.VISIBLE
@@ -112,23 +111,35 @@ class FeeFormActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode == RESULT_OK && requestCode == pickImage) {
             val uri = data?.data
+
             if (uri != null)
                 saveFeeFormData(uri)
             else
-                Toast.makeText(this, "Someting went wrong", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "Someting            if (isDownloadsDocument(uri)) {\n went wrong", Toast.LENGTH_SHORT).show()
         }
     }
-
+    fun getPath(uri: Uri): String {
+        var result: String? = null
+        val proj = arrayOf(MediaStore.Images.Media.DATA)
+        val cursor: Cursor? = getContentResolver().query(uri, proj, null, null, null)
+        if (cursor != null) {
+            if (cursor.moveToFirst()) {
+                val column_index: Int = cursor.getColumnIndexOrThrow(proj[0])
+                result = cursor.getString(column_index)
+            }
+            cursor.close()
+        }
+        if (result == null) {
+            result = "Not found"
+        }
+        return result
+    }
     private fun saveFeeFormData(uri: Uri) {
         val repository = Repository()
+        val imagefile = File(getPath(uri))
 
-        val utilsFile = UtilsFile()
-        val imagepath = utilsFile.getFullPathFromContentUri(this, uri)
-        val imagefile = File(imagepath)
-
-        val requestFile = RequestBody.create(MediaType.parse("multipart/form-data"), imagefile)
+        val requestFile = RequestBody.create(MediaType.parse("image/*"), imagefile)
         val body = MultipartBody.Part.createFormData("image", imagefile.name, requestFile)
-
 
         val uploadFeeData = UploadFeeData(
             studentInfo.program.id,
@@ -139,18 +150,19 @@ class FeeFormActivity : AppCompatActivity() {
 
         val gson = Gson()
         val jsonStr = gson.toJson(uploadFeeData)
+        Log.d("fee_data"," $jsonStr")
 
         val requestJsonFile = RequestBody.create(MediaType.parse("multipart/form-data"), jsonStr)
 
 
         val retrofit = repository.saveStudentFeeFormData(body,requestJsonFile)
 
-
         retrofit.enqueue(object : Callback<StudentFeeModel?> {
             override fun onResponse(
                 call: Call<StudentFeeModel?>,
                 response: Response<StudentFeeModel?>
             ) {
+                Log.d("COmplere"," ${response.message()}   ${response.body()}  ")
                 if(response.isSuccessful){
                     if (response.body()?.success == true)
                         Toast.makeText(this@FeeFormActivity, "Fee Form submit Successfully.", Toast.LENGTH_SHORT).show()
@@ -159,8 +171,8 @@ class FeeFormActivity : AppCompatActivity() {
 
                 }
             }
-
             override fun onFailure(call: Call<StudentFeeModel?>, t: Throwable) {
+                t.message?.let { Log.d("eeee_+_", it) }
                 Toast.makeText(this@FeeFormActivity, "Error : ${t.message}", Toast.LENGTH_SHORT).show()
             }
         })
@@ -201,9 +213,8 @@ class FeeFormActivity : AppCompatActivity() {
     }
 
     private fun saveImageToStream(outputStream: OutputStream) {
-        val bitmap: Bitmap = drawReciept()
         try {
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
+            drawReciept().compress(CompressFormat.PNG, 100, outputStream)
             outputStream.close()
             Toast.makeText(this, "Fee Form download successfully.", Toast.LENGTH_SHORT).show()
         } catch (e: Exception) {
@@ -214,7 +225,7 @@ class FeeFormActivity : AppCompatActivity() {
 
 
     private fun drawReciept(): Bitmap {
-        val receipt = ReceiptBuilder(1200)
+        val receipt = ReceiptBuilder(800)
         receipt.setMargin(20, 20).setAlign(Paint.Align.CENTER).setColor(Color.BLACK)
             .addParagraph()
             .addParagraph()
